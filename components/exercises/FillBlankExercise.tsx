@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
 import { Card, Button } from "@/components";
 import { Exercise } from "@/lib/types";
@@ -15,6 +15,13 @@ export default function FillBlankExercise({
   const [userAnswer, setUserAnswer] = useState("");
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+
+  // Reset state when exercise changes
+  useEffect(() => {
+    setUserAnswer("");
+    setHasAnswered(false);
+    setIsCorrect(false);
+  }, [exercise.id]);
 
   const handleSubmit = () => {
     if (hasAnswered || !userAnswer.trim()) return;

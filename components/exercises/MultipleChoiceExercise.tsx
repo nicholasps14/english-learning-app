@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Card } from "@/components";
 import { Exercise } from "@/lib/types";
@@ -14,6 +14,12 @@ export default function MultipleChoiceExercise({
 }: MultipleChoiceExerciseProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+
+  // Reset state when exercise changes
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setHasAnswered(false);
+  }, [exercise.id]);
 
   const handleSelect = (answer: string) => {
     if (hasAnswered) return;

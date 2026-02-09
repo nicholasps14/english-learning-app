@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Card } from "@/components";
 import { Exercise } from "@/lib/types";
@@ -14,6 +14,12 @@ export default function FlashcardExercise({
 }: FlashcardExerciseProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
+
+  // Reset state when exercise changes
+  useEffect(() => {
+    setIsFlipped(false);
+    setHasAnswered(false);
+  }, [exercise.id]);
 
   const handleFlip = () => {
     if (!hasAnswered) {
