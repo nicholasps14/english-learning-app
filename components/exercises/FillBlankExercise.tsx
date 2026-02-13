@@ -32,8 +32,7 @@ export default function FillBlankExercise({
 
     setIsCorrect(correct);
     setHasAnswered(true);
-
-    setTimeout(() => onAnswer(correct), 1500);
+    onAnswer(correct);
   };
 
   return (
@@ -42,10 +41,12 @@ export default function FillBlankExercise({
         <Text className="text-h3 font-bold text-neutral-800 text-center">
           Fill in the blank
         </Text>
-        {exercise.hint && !hasAnswered && (
-          <Text className="text-body-sm text-neutral-600 text-center">
-            💡 {exercise.hint}
-          </Text>
+        {exercise.hint && (
+          <View className="bg-primary/10 p-md rounded-lg border border-primary/30">
+            <Text className="text-body text-neutral-700 text-center">
+              💡 Hint: {exercise.hint}
+            </Text>
+          </View>
         )}
       </View>
 

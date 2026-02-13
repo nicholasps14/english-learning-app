@@ -87,7 +87,7 @@ export default function AchievementsScreen() {
       title: "Perfectionist",
       description: "Complete a lesson with 100% accuracy",
       icon: "💎",
-      unlocked: false, // TODO: Track lesson accuracy
+      unlocked: progress.hasPerfectLesson,
     },
   ];
 

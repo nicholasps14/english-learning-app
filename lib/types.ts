@@ -5,7 +5,7 @@
 
 export type LearningMode = "tech" | "life";
 export type DifficultyLevel = "beginner" | "intermediate" | "advanced";
-export type ExerciseType = "flashcard" | "multiple-choice" | "fill-blank" | "pronunciation" | "conversation";
+export type ExerciseType = "flashcard" | "multiple-choice" | "fill-blank" | "translate" | "listen-type" | "unscramble" | "match-pairs" | "pronunciation" | "conversation";
 
 // ============================================================================
 // VOCABULARY
@@ -114,6 +114,7 @@ export interface Subcategory {
 
 export interface UserProgress {
   userId: string;
+  hasCompletedOnboarding: boolean;
 
   // Overall Stats
   totalXP: number;
@@ -146,6 +147,8 @@ export interface UserProgress {
   totalVocabularyLearned: number;
   totalStudyTime: number; // minutes
   accuracyRate: number; // 0-100
+  bestLessonAccuracy: number; // Best accuracy achieved in any lesson
+  hasPerfectLesson: boolean; // Has completed at least one lesson with 100%
 }
 
 // ============================================================================

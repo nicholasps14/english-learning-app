@@ -26,8 +26,16 @@ export default function LoginScreen() {
     if (success) {
       // Set current user for progress tracking
       await setCurrentUser(email);
+
+      // Check if user has completed onboarding
+      const progress = useProgressStore.getState().progress;
       setLoading(false);
-      router.replace("/(tabs)/tech");
+
+      if (progress && !progress.hasCompletedOnboarding) {
+        router.replace("/onboarding/welcome");
+      } else {
+        router.replace("/(tabs)/tech");
+      }
     } else {
       setLoading(false);
       if (Platform.OS === "web") {

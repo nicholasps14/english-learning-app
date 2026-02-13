@@ -6,6 +6,9 @@ import {
   MultipleChoiceExercise,
   FillBlankExercise,
   FlashcardExercise,
+  TranslateSentence,
+  ListenAndType,
+  UnscrambleSentence,
 } from "@/components/exercises";
 import { Button } from "@/components";
 import { useVocabularyStore } from "@/stores/vocabularyStore";
@@ -36,6 +39,8 @@ export default function PracticeSessionScreen() {
     startTime: Date.now(),
   });
   const [isComplete, setIsComplete] = useState(false);
+  const [hasAnsweredCurrent, setHasAnsweredCurrent] = useState(false);
+  const [filterInfo, setFilterInfo] = useState<string>("");
 
   useEffect(() => {
     // Generate exercises from vocabulary
@@ -50,13 +55,62 @@ export default function PracticeSessionScreen() {
   }, []);
 
   const getFilteredVocabulary = (): VocabularyItem[] => {
+    const progress = useProgressStore.getState().progress;
+    const srsData = useVocabularyStore.getState().srsData;
+
     let filtered = vocabulary.filter((v) => v.mode === mode);
 
-    // For now, just use all vocabulary
-    // TODO: Implement category, weakest, recent filtering
+    // Apply source filter
+    if (source === "category") {
+      // Group by category and let user select (for now, randomize across categories)
+      const categories = [...new Set(filtered.map(v => v.category))];
+      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+      filtered = filtered.filter(v => v.category === randomCategory);
+      setFilterInfo(`📚 Category: ${randomCategory}`);
+    } else if (source === "weakest") {
+      // Get words with lowest performance (most incorrect reviews or lowest quality)
+      const learnedVocab = filtered.filter(v =>
+        progress?.learnedVocabularyIds.includes(v.id)
+      );
 
-    // Limit to 10 exercises for practice
-    return filtered.slice(0, 10);
+      const vocabWithScores = learnedVocab.map(v => {
+        const srs = srsData[v.id];
+        if (!srs || srs.reviewHistory.length === 0) {
+          return { vocab: v, score: 2.5 }; // Default score
+        }
+
+        // Calculate average quality from review history
+        const avgQuality = srs.reviewHistory.reduce((sum, review) => sum + review.quality, 0) / srs.reviewHistory.length;
+        return { vocab: v, score: avgQuality };
+      });
+
+      // Sort by lowest score first
+      vocabWithScores.sort((a, b) => a.score - b.score);
+      filtered = vocabWithScores.slice(0, 15).map(v => v.vocab);
+      setFilterInfo(`💪 Practicing your weakest ${filtered.length} words`);
+    } else if (source === "recent") {
+      // Get vocabulary learned in last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentVocab = filtered.filter(v => {
+        const srs = srsData[v.id];
+        if (!srs || !srs.lastReviewDate) return false;
+
+        const lastReview = new Date(srs.lastReviewDate);
+        return lastReview >= sevenDaysAgo;
+      });
+
+      filtered = recentVocab.length > 0 ? recentVocab : filtered;
+      setFilterInfo(`🆕 Recently learned (last 7 days): ${filtered.length} words`);
+    } else {
+      setFilterInfo(`📖 Practicing all ${filtered.length} learned words`);
+    }
+    // "all" - use all vocabulary (default)
+
+    // Shuffle and limit to 10 exercises for practice
+    const shuffled = filtered.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 10);
   };
 
   const generateExercises = (
@@ -64,25 +118,97 @@ export default function PracticeSessionScreen() {
     type: string
   ): Exercise[] => {
     return vocabItems.map((vocab, index) => {
-      // For now, generate simple multiple choice exercises
-      // TODO: Add more exercise types based on exerciseType parameter
-      const incorrectOptions = vocabulary
-        .filter((v) => v.id !== vocab.id && v.mode === mode)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3)
-        .map((v) => v.translation);
+      // Generate different exercise types based on the type parameter
+      let exerciseType = type;
+      if (type === "mix") {
+        const types = ["multiple-choice", "fill-blank", "flashcard", "translate", "listen-type", "unscramble"];
+        exerciseType = types[Math.floor(Math.random() * types.length)];
+      }
 
-      const allOptions = [vocab.translation, ...incorrectOptions].sort(
-        () => Math.random() - 0.5
-      );
+      // Generate multiple-choice exercise
+      if (exerciseType === "multiple-choice") {
+        const incorrectOptions = vocabulary
+          .filter((v) => v.id !== vocab.id && v.mode === mode)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3)
+          .map((v) => v.translation);
 
+        const allOptions = [vocab.translation, ...incorrectOptions].sort(
+          () => Math.random() - 0.5
+        );
+
+        return {
+          id: `exercise-${index}`,
+          type: "multiple-choice",
+          question: `What does "${vocab.word}" mean?`,
+          correctAnswer: vocab.translation,
+          options: allOptions,
+          hint: vocab.exampleSentence,
+          vocabularyId: vocab.id,
+        };
+      }
+
+      // Generate fill-blank exercise
+      if (exerciseType === "fill-blank") {
+        // Use the example sentence with the word replaced by a blank
+        const question = vocab.exampleSentence.replace(
+          new RegExp(vocab.word, "gi"),
+          "_____"
+        );
+
+        return {
+          id: `exercise-${index}`,
+          type: "fill-blank",
+          question: question,
+          correctAnswer: vocab.word,
+          hint: `Translation: ${vocab.translation}`,
+          vocabularyId: vocab.id,
+        };
+      }
+
+      // Generate translate exercise
+      if (exerciseType === "translate") {
+        return {
+          id: `exercise-${index}`,
+          type: "translate",
+          question: vocab.exampleTranslation,
+          correctAnswer: vocab.exampleSentence,
+          hint: `Use the word: ${vocab.word}`,
+          vocabularyId: vocab.id,
+        };
+      }
+
+      // Generate listen-type exercise
+      if (exerciseType === "listen-type") {
+        return {
+          id: `exercise-${index}`,
+          type: "listen-type",
+          question: `Listen and type: ${vocab.word}`,
+          correctAnswer: vocab.word,
+          hint: `Translation: ${vocab.translation}`,
+          vocabularyId: vocab.id,
+        };
+      }
+
+      // Generate unscramble exercise
+      if (exerciseType === "unscramble") {
+        return {
+          id: `exercise-${index}`,
+          type: "unscramble",
+          question: vocab.exampleSentence,
+          correctAnswer: vocab.exampleSentence,
+          hint: `Translation: ${vocab.exampleTranslation}`,
+          vocabularyId: vocab.id,
+        };
+      }
+
+      // Generate flashcard exercise (default)
       return {
         id: `exercise-${index}`,
-        type: "multiple-choice",
-        question: `What does "${vocab.word}" mean?`,
+        type: "flashcard",
+        question: vocab.word,
         correctAnswer: vocab.translation,
-        options: allOptions,
-        hint: vocab.exampleSentence,
+        explanation: vocab.exampleSentence,
         vocabularyId: vocab.id,
       };
     });
@@ -103,11 +229,23 @@ export default function PracticeSessionScreen() {
       addXP(xpGain, mode);
     }
 
-    // Move to next exercise or complete
+    // Mark current question as answered
+    setHasAnsweredCurrent(true);
+  };
+
+  const handleNext = () => {
     if (currentIndex < exercises.length - 1) {
-      setTimeout(() => setCurrentIndex(currentIndex + 1), 500);
+      setCurrentIndex(currentIndex + 1);
+      setHasAnsweredCurrent(false);
     } else {
-      setTimeout(() => setIsComplete(true), 500);
+      setIsComplete(true);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setHasAnsweredCurrent(false);
     }
   };
 
@@ -203,8 +341,8 @@ export default function PracticeSessionScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Back Button */}
-      <View className="px-lg pt-md">
+      {/* Back Button & Filter Info */}
+      <View className="px-lg pt-md gap-sm">
         <Pressable
           onPress={() => router.back()}
           className="flex-row items-center gap-sm active:opacity-70"
@@ -212,6 +350,13 @@ export default function PracticeSessionScreen() {
           <Text className="text-2xl">←</Text>
           <Text className="text-body text-neutral-600">Back</Text>
         </Pressable>
+        {filterInfo && (
+          <View className="bg-primary/10 px-md py-sm rounded-lg">
+            <Text className="text-body-sm text-primary font-medium">
+              {filterInfo}
+            </Text>
+          </View>
+        )}
       </View>
 
       <ExerciseWrapper
@@ -221,19 +366,55 @@ export default function PracticeSessionScreen() {
         mode={mode}
         showProgress={true}
       >
-      {currentExercise.type === "multiple-choice" && (
-        <MultipleChoiceExercise
-          exercise={currentExercise}
-          onAnswer={handleAnswer}
-        />
-      )}
-      {currentExercise.type === "fill-blank" && (
-        <FillBlankExercise exercise={currentExercise} onAnswer={handleAnswer} />
-      )}
-      {currentExercise.type === "flashcard" && (
-        <FlashcardExercise exercise={currentExercise} onAnswer={handleAnswer} />
-      )}
-    </ExerciseWrapper>
+        {currentExercise.type === "multiple-choice" && (
+          <MultipleChoiceExercise
+            exercise={currentExercise}
+            onAnswer={handleAnswer}
+          />
+        )}
+        {currentExercise.type === "fill-blank" && (
+          <FillBlankExercise exercise={currentExercise} onAnswer={handleAnswer} />
+        )}
+        {currentExercise.type === "flashcard" && (
+          <FlashcardExercise exercise={currentExercise} onAnswer={handleAnswer} />
+        )}
+        {currentExercise.type === "translate" && (
+          <TranslateSentence exercise={currentExercise} onAnswer={handleAnswer} />
+        )}
+        {currentExercise.type === "listen-type" && (
+          <ListenAndType exercise={currentExercise} onAnswer={handleAnswer} />
+        )}
+        {currentExercise.type === "unscramble" && (
+          <UnscrambleSentence exercise={currentExercise} onAnswer={handleAnswer} />
+        )}
+      </ExerciseWrapper>
+
+      {/* Navigation Buttons */}
+      <View className="px-lg pb-lg gap-sm">
+        <View className="flex-row justify-between items-center">
+          <Button
+            variant="outline"
+            size="lg"
+            onPress={handlePrevious}
+            disabled={currentIndex === 0}
+          >
+            ← Previous
+          </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            onPress={handleNext}
+            disabled={!hasAnsweredCurrent}
+          >
+            {currentIndex === exercises.length - 1 ? "Finish" : "Next →"}
+          </Button>
+        </View>
+        {!hasAnsweredCurrent && (
+          <Text className="text-body-sm text-neutral-500 text-center">
+            Answer the question to continue
+          </Text>
+        )}
+      </View>
     </View>
   );
 }

@@ -2,16 +2,22 @@ import React from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { router } from "expo-router";
 import { Card, Button } from "@/components";
+import { useProgressStore } from "@/stores";
 
 const GOAL_OPTIONS = [
-  { xp: 10, time: "5 min", level: "Casual", icon: "🌱" },
-  { xp: 20, time: "10 min", level: "Regular", icon: "🎯" },
-  { xp: 50, time: "20 min", level: "Serious", icon: "🔥" },
-  { xp: 100, time: "30 min", level: "Intense", icon: "⚡" },
+  { minutes: 5, time: "5 min", level: "Casual", icon: "🌱" },
+  { minutes: 10, time: "10 min", level: "Regular", icon: "🎯" },
+  { minutes: 20, time: "20 min", level: "Serious", icon: "🔥" },
+  { minutes: 30, time: "30 min", level: "Intense", icon: "⚡" },
 ];
 
 export default function DailyGoalScreen() {
-  const [selectedGoal, setSelectedGoal] = React.useState(20);
+  const progress = useProgressStore((state) => state.progress);
+  const updateDailyGoal = useProgressStore((state) => state.updateDailyGoal);
+
+  const [selectedGoal, setSelectedGoal] = React.useState(
+    progress?.dailyGoalMinutes || 10
+  );
 
   return (
     <ScrollView className="flex-1 bg-white">
@@ -39,13 +45,13 @@ export default function DailyGoalScreen() {
 
           {GOAL_OPTIONS.map((option) => (
             <Pressable
-              key={option.xp}
-              onPress={() => setSelectedGoal(option.xp)}
+              key={option.minutes}
+              onPress={() => setSelectedGoal(option.minutes)}
               className="active:opacity-70"
             >
               <Card
                 className={
-                  selectedGoal === option.xp
+                  selectedGoal === option.minutes
                     ? "border-2 border-primary"
                     : "border border-neutral-200"
                 }
@@ -58,11 +64,11 @@ export default function DailyGoalScreen() {
                         {option.level}
                       </Text>
                       <Text className="text-body-sm text-neutral-600 mt-xs">
-                        {option.xp} XP · {option.time}/day
+                        {option.time}/day
                       </Text>
                     </View>
                   </View>
-                  {selectedGoal === option.xp && (
+                  {selectedGoal === option.minutes && (
                     <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
                       <Text className="text-white text-xs font-bold">✓</Text>
                     </View>
@@ -78,8 +84,8 @@ export default function DailyGoalScreen() {
           variant="primary"
           size="lg"
           onPress={() => {
-            // TODO: Save goal to store
-            router.push("/(tabs)/tech");
+            updateDailyGoal(selectedGoal);
+            router.back();
           }}
         >
           Save Goal

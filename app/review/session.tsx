@@ -24,6 +24,7 @@ export default function ReviewSessionScreen() {
     startTime: Date.now(),
   });
   const [isComplete, setIsComplete] = useState(false);
+  const [cardStartTime, setCardStartTime] = useState(Date.now());
 
   useEffect(() => {
     // Load due cards on mount
@@ -33,6 +34,9 @@ export default function ReviewSessionScreen() {
     if (cards.length === 0) {
       // No cards to review, go back
       router.back();
+    } else {
+      // Start timer for first card
+      setCardStartTime(Date.now());
     }
   }, []);
 
@@ -40,8 +44,11 @@ export default function ReviewSessionScreen() {
     const currentCard = dueCards[currentIndex];
     if (!currentCard) return;
 
-    // Update SRS data
-    updateSRS(currentCard.id, quality);
+    // Calculate time spent on this card (in seconds)
+    const timeSpent = Math.floor((Date.now() - cardStartTime) / 1000);
+
+    // Update SRS data with time tracking
+    updateSRS(currentCard.id, quality, timeSpent);
 
     // Track stats
     const isCorrect = quality >= 3; // 3, 4, or 5 are considered correct
@@ -62,6 +69,7 @@ export default function ReviewSessionScreen() {
     // Move to next card or complete session
     if (currentIndex < dueCards.length - 1) {
       setCurrentIndex(currentIndex + 1);
+      setCardStartTime(Date.now()); // Reset timer for next card
     } else {
       // Session complete
       completeSession();

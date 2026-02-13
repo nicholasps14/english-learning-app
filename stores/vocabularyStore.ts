@@ -11,7 +11,7 @@ interface VocabularyState {
   getVocabularyByMode: (mode: LearningMode) => VocabularyItem[];
   getVocabularyByCategory: (category: string) => VocabularyItem[];
   getDueForReview: () => VocabularyItem[];
-  updateSRS: (vocabularyId: string, quality: number) => void;
+  updateSRS: (vocabularyId: string, quality: number, timeSpent?: number) => void;
   initializeSRS: (vocabularyId: string) => void;
 }
 
@@ -75,7 +75,7 @@ export const useVocabularyStore = create<VocabularyState>((set, get) => ({
     });
   },
 
-  updateSRS: (vocabularyId, quality) => {
+  updateSRS: (vocabularyId, quality, timeSpent = 0) => {
     const { srsData } = get();
     const currentSRS = srsData[vocabularyId];
 
@@ -104,7 +104,7 @@ export const useVocabularyStore = create<VocabularyState>((set, get) => ({
         {
           date: new Date(),
           quality,
-          timeSpent: 0, // TODO: track actual time
+          timeSpent, // Track actual time spent
         },
       ],
     };

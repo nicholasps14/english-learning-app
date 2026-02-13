@@ -7,6 +7,9 @@ import { Exercise } from "@/lib/types";
 import FlashcardExercise from "@/components/exercises/FlashcardExercise";
 import MultipleChoiceExercise from "@/components/exercises/MultipleChoiceExercise";
 import FillBlankExercise from "@/components/exercises/FillBlankExercise";
+import TranslateSentence from "@/components/exercises/TranslateSentence";
+import ListenAndType from "@/components/exercises/ListenAndType";
+import UnscrambleSentence from "@/components/exercises/UnscrambleSentence";
 import { useProgressStore } from "@/stores";
 
 export default function LessonScreen() {
@@ -14,6 +17,7 @@ export default function LessonScreen() {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [hasAnsweredCurrent, setHasAnsweredCurrent] = useState(false);
 
   const lesson = allLessons.find((l) => l.id === id);
 
@@ -45,17 +49,28 @@ export default function LessonScreen() {
       setCorrectAnswers((prev) => prev + 1);
     }
 
-    // Move to next exercise after a delay
-    setTimeout(() => {
-      if (currentExerciseIndex < lesson.exercises.length - 1) {
-        setCurrentExerciseIndex((prev) => prev + 1);
-      } else {
-        // Lesson completed
-        setIsCompleted(true);
-        completeLesson(lesson.id, lesson.mode);
-        addStudyTime(lesson.estimatedMinutes);
-      }
-    }, 300);
+    // Mark current exercise as answered
+    setHasAnsweredCurrent(true);
+  };
+
+  const handleNext = () => {
+    if (currentExerciseIndex < lesson.exercises.length - 1) {
+      setCurrentExerciseIndex((prev) => prev + 1);
+      setHasAnsweredCurrent(false);
+    } else {
+      // Lesson completed
+      const accuracyRate = Math.round((correctAnswers / lesson.exercises.length) * 100);
+      setIsCompleted(true);
+      completeLesson(lesson.id, lesson.mode, accuracyRate);
+      addStudyTime(lesson.estimatedMinutes);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentExerciseIndex > 0) {
+      setCurrentExerciseIndex((prev) => prev - 1);
+      setHasAnsweredCurrent(false);
+    }
   };
 
   const handleExit = () => {
@@ -144,6 +159,51 @@ export default function LessonScreen() {
             exercise={currentExercise}
             onAnswer={handleAnswer}
           />
+        )}
+        {currentExercise.type === "translate" && (
+          <TranslateSentence
+            exercise={currentExercise}
+            onAnswer={handleAnswer}
+          />
+        )}
+        {currentExercise.type === "listen-type" && (
+          <ListenAndType
+            exercise={currentExercise}
+            onAnswer={handleAnswer}
+          />
+        )}
+        {currentExercise.type === "unscramble" && (
+          <UnscrambleSentence
+            exercise={currentExercise}
+            onAnswer={handleAnswer}
+          />
+        )}
+      </View>
+
+      {/* Navigation Buttons */}
+      <View className="bg-white border-t border-neutral-200 px-lg py-md gap-sm">
+        <View className="flex-row justify-between items-center">
+          <Button
+            variant="outline"
+            size="lg"
+            onPress={handlePrevious}
+            disabled={currentExerciseIndex === 0}
+          >
+            ← Previous
+          </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            onPress={handleNext}
+            disabled={!hasAnsweredCurrent}
+          >
+            {currentExerciseIndex === lesson.exercises.length - 1 ? "Finish" : "Next →"}
+          </Button>
+        </View>
+        {!hasAnsweredCurrent && (
+          <Text className="text-body-sm text-neutral-500 text-center">
+            Answer the question to continue
+          </Text>
         )}
       </View>
     </View>

@@ -2,10 +2,17 @@ import { View, Text, TextInput } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Card, Button } from "@/components";
+import { useProgressStore } from "@/stores";
 
 export default function ProfileSetupScreen() {
   const [name, setName] = useState("");
   const [nativeLanguage, setNativeLanguage] = useState("");
+  const completeOnboarding = useProgressStore((state) => state.completeOnboarding);
+
+  const handleStartLearning = () => {
+    completeOnboarding();
+    router.replace("/(tabs)/tech");
+  };
 
   return (
     <View className="flex-1 bg-neutral-50 p-xl justify-center">
@@ -69,7 +76,7 @@ export default function ProfileSetupScreen() {
           variant="primary"
           size="lg"
           disabled={!name || !nativeLanguage}
-          onPress={() => router.replace("/(tabs)/tech")}
+          onPress={handleStartLearning}
         >
           Start Learning
         </Button>

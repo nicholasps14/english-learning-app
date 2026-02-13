@@ -22,14 +22,15 @@ export default function PracticeConfigScreen() {
     { id: "translate", label: "Translate Sentence", icon: "🌐" },
     { id: "listen-type", label: "Listen & Type", icon: "🔊" },
     { id: "unscramble", label: "Unscramble", icon: "🔀" },
-    { id: "match-pairs", label: "Match Pairs", icon: "🔗" },
+    // Note: match-pairs requires special data structure (array of pairs)
+    // { id: "match-pairs", label: "Match Pairs", icon: "🔗" },
   ];
 
   const vocabularySources: Array<{ id: VocabularySource; label: string; description: string }> = [
     { id: "all", label: "All Learned Words", description: "Practice everything you've learned" },
-    { id: "category", label: "Specific Category", description: "Focus on one category" },
-    { id: "weakest", label: "Weakest Words", description: "Words you struggle with most" },
-    { id: "recent", label: "Recently Learned", description: "Last 7 days" },
+    { id: "category", label: "Random Category", description: "Focus on a random category" },
+    { id: "weakest", label: "Weakest Words", description: "Words with lowest review scores" },
+    { id: "recent", label: "Recently Learned", description: "Words reviewed in last 7 days" },
   ];
 
   const handleStartPractice = () => {

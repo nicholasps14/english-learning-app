@@ -28,7 +28,7 @@ export default function MultipleChoiceExercise({
     setHasAnswered(true);
 
     const isCorrect = answer === exercise.correctAnswer;
-    setTimeout(() => onAnswer(isCorrect), 1500); // Show feedback before moving on
+    onAnswer(isCorrect);
   };
 
   const getOptionStyle = (option: string) => {
