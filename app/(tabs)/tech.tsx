@@ -112,12 +112,14 @@ export default function TechScreen() {
           </View>
 
           {visibleCategories.map((category) => {
-            const firstLessonId = category.subcategories[0]?.lessonIds[0];
+            const lessonIds = category.subcategories[0]?.lessonIds || [];
             const completedLessons = progress.completedLessonIds.filter((id) =>
-              category.subcategories[0]?.lessonIds.includes(id)
+              lessonIds.includes(id)
             ).length;
-            const totalLessons = category.subcategories[0]?.lessonIds.length || 0;
+            const totalLessons = lessonIds.length;
             const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+            const nextLessonId =
+              lessonIds.find((id) => !progress.completedLessonIds.includes(id)) || lessonIds[0];
 
             return (
               <Card key={category.id} variant="tech">
@@ -140,8 +142,8 @@ export default function TechScreen() {
                   <Button
                     variant="tech"
                     size="sm"
-                    onPress={() => firstLessonId && router.push(`/lesson/${firstLessonId}`)}
-                    disabled={!firstLessonId}
+                    onPress={() => nextLessonId && router.push(`/lesson/${nextLessonId}`)}
+                    disabled={!nextLessonId}
                   >
                     {completedLessons > 0 ? "Continue Learning" : "Start Learning"}
                   </Button>
